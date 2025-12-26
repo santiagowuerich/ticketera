@@ -1,3 +1,5 @@
-export { Event } from './event.entity';
-export { Ticket, TicketStatus } from './ticket.entity';
-export { Payment, PaymentStatus } from './payment.entity';
+export * from './user.entity';
+export * from './event.entity';
+export * from './ticket.entity';
+export * from './payment.entity';
+

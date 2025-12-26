@@ -17,29 +17,39 @@ let cachedApp: any = null;
 
 async function bootstrap() {
     if (!cachedApp) {
-        const app = await NestFactory.create(
-            AppModule,
-            new ExpressAdapter(server),
-        );
+        try {
+            const app = await NestFactory.create(
+                AppModule,
+                new ExpressAdapter(server),
+                {
+                    logger: process.env.NODE_ENV === 'production' ? ['error', 'warn'] : ['log', 'error', 'warn', 'debug'],
+                }
+            );
 
-        // Habilitar CORS para el frontend
-        app.enableCors({
-            origin: process.env.FRONTEND_URL || 'https://ticketera-two.vercel.app',
-            credentials: true,
-            methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization'],
-        });
+            // Habilitar CORS para el frontend
+            const frontendUrl = process.env.FRONTEND_URL || 'https://ticketera-two.vercel.app';
+            app.enableCors({
+                origin: frontendUrl,
+                credentials: true,
+                methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+                allowedHeaders: ['Content-Type', 'Authorization'],
+            });
 
-        // Validación automática de DTOs
-        app.useGlobalPipes(
-            new ValidationPipe({
-                whitelist: true,
-                transform: true,
-            }),
-        );
+            // Validación automática de DTOs
+            app.useGlobalPipes(
+                new ValidationPipe({
+                    whitelist: true,
+                    transform: true,
+                    forbidNonWhitelisted: false,
+                }),
+            );
 
-        await app.init();
-        cachedApp = app;
+            await app.init();
+            cachedApp = app;
+        } catch (error) {
+            console.error('Error initializing NestJS app:', error);
+            throw error;
+        }
     }
     return cachedApp;
 }
@@ -47,7 +57,8 @@ async function bootstrap() {
 export default async function handler(req: ExpressRequest, res: ExpressResponse) {
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'https://ticketera-two.vercel.app');
+        const frontendUrl = process.env.FRONTEND_URL || 'https://ticketera-two.vercel.app';
+        res.setHeader('Access-Control-Allow-Origin', frontendUrl);
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
         res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
         res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -55,6 +66,14 @@ export default async function handler(req: ExpressRequest, res: ExpressResponse)
         return;
     }
 
-    await bootstrap();
-    server(req, res);
+    try {
+        await bootstrap();
+        server(req, res);
+    } catch (error) {
+        console.error('Error handling request:', error);
+        res.status(500).json({
+            error: 'Internal Server Error',
+            message: process.env.NODE_ENV === 'development' ? (error as Error).message : 'An error occurred',
+        });
+    }
 }

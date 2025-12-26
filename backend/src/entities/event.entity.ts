@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
 import { Ticket } from './ticket.entity';
 
 @Entity('events')
@@ -27,10 +27,10 @@ export class Event {
   @Column({ nullable: true })
   location: string;
 
-  @Column()
+  @Column({ type: 'int' })
   capacity: number;
 
-  @Column({ name: 'available_tickets', default: 0 })
+  @Column({ name: 'available_tickets', type: 'int', default: 0 })
   availableTickets: number;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
@@ -48,12 +48,11 @@ export class Event {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @OneToMany(() => Ticket, ticket => ticket.event)
+  @OneToMany(() => Ticket, (ticket) => ticket.event)
   tickets: Ticket[];
 
-  // Virtual properties
   get isAvailable(): boolean {
-    return this.isActive && this.availableTickets > 0 && this.endDate > new Date();
+    return this.isActive && this.availableTickets > 0 && new Date() < this.endDate;
   }
 
   get soldTickets(): number {
@@ -64,3 +63,4 @@ export class Event {
     return this.capacity > 0 ? (this.soldTickets / this.capacity) * 100 : 0;
   }
 }
+

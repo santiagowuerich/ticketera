@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Ticket } from './ticket.entity';
 
 export enum PaymentStatus {
@@ -6,7 +6,7 @@ export enum PaymentStatus {
   APPROVED = 'approved',
   REJECTED = 'rejected',
   CANCELLED = 'cancelled',
-  REFUNDED = 'refunded'
+  REFUNDED = 'refunded',
 }
 
 @Entity('payments')
@@ -35,7 +35,7 @@ export class Payment {
   @Column({
     type: 'enum',
     enum: PaymentStatus,
-    default: PaymentStatus.PENDING
+    default: PaymentStatus.PENDING,
   })
   status: PaymentStatus;
 
@@ -63,13 +63,12 @@ export class Payment {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @ManyToOne(() => Ticket, ticket => ticket.payments)
+  @ManyToOne(() => Ticket, (ticket) => ticket.payments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ticket_id' })
   ticket: Ticket;
 
-  // Virtual properties
   get isCompleted(): boolean {
-    return [PaymentStatus.APPROVED, PaymentStatus.REFUNDED].includes(this.status);
+    return this.status === PaymentStatus.APPROVED;
   }
 
   get isPending(): boolean {
@@ -77,8 +76,7 @@ export class Payment {
   }
 
   get canBeRefunded(): boolean {
-    return this.status === PaymentStatus.APPROVED &&
-      this.paymentDate &&
-      this.paymentDate > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Últimos 30 días
+    return this.status === PaymentStatus.APPROVED;
   }
 }
+

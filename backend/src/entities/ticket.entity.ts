@@ -1,4 +1,4 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { Event } from './event.entity';
 import { Payment } from './payment.entity';
 
@@ -7,7 +7,7 @@ export enum TicketStatus {
   PAID = 'paid',
   USED = 'used',
   CANCELLED = 'cancelled',
-  REFUNDED = 'refunded'
+  REFUNDED = 'refunded',
 }
 
 @Entity('tickets')
@@ -18,7 +18,6 @@ export class Ticket {
   @Column({ name: 'event_id' })
   eventId: string;
 
-  // Datos del comprador (almacenados directamente en el ticket)
   @Column({ name: 'customer_name' })
   customerName: string;
 
@@ -31,7 +30,7 @@ export class Ticket {
   @Column({ name: 'customer_phone', nullable: true })
   customerPhone: string;
 
-  @Column({ default: 1 })
+  @Column({ type: 'int', default: 1 })
   quantity: number;
 
   @Column({ name: 'total_price', type: 'decimal', precision: 10, scale: 2 })
@@ -43,7 +42,7 @@ export class Ticket {
   @Column({
     type: 'enum',
     enum: TicketStatus,
-    default: TicketStatus.PENDING
+    default: TicketStatus.PENDING,
   })
   status: TicketStatus;
 
@@ -53,7 +52,7 @@ export class Ticket {
   @Column({ name: 'qr_validated', default: false })
   qrValidated: boolean;
 
-  @Column({ name: 'selected_date', type: 'date', nullable: true })
+  @Column({ name: 'selected_date', nullable: true })
   selectedDate: string;
 
   @Column({ name: 'selected_time', nullable: true })
@@ -71,30 +70,28 @@ export class Ticket {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @ManyToOne(() => Event, event => event.tickets)
+  @ManyToOne(() => Event, (event) => event.tickets, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'event_id' })
   event: Event;
 
-  @OneToMany(() => Payment, payment => payment.ticket)
+  @OneToMany(() => Payment, (payment) => payment.ticket)
   payments: Payment[];
 
-  // Virtual properties
   get unitPrice(): number {
-    return this.quantity > 0 ? this.totalPrice / this.quantity : 0;
+    return this.quantity > 0 ? Number(this.totalPrice) / this.quantity : 0;
   }
 
   get canBeUsed(): boolean {
-    return this.status === TicketStatus.PAID &&
-      !this.qrValidated &&
-      this.event &&
-      this.event.endDate > new Date();
+    return this.status === TicketStatus.PAID && !this.qrValidated;
   }
 
   get isExpired(): boolean {
-    return this.event && this.event.endDate < new Date();
+    if (!this.event) return false;
+    return new Date() > this.event.endDate;
   }
 
   get isUsed(): boolean {
-    return this.qrValidated || this.status === TicketStatus.USED;
+    return this.status === TicketStatus.USED || this.qrValidated;
   }
 }
+
