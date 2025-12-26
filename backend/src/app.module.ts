@@ -11,6 +11,7 @@ import { User } from './entities/user.entity';
 import { Event } from './entities/event.entity';
 import { Ticket } from './entities/ticket.entity';
 import { Payment } from './entities/payment.entity';
+import * as dns from 'dns';
 
 @Module({
   imports: [
@@ -20,7 +21,10 @@ import { Payment } from './entities/payment.entity';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => {
+      useFactory: async (configService: ConfigService) => {
+        // Forzar uso de IPv4 para evitar problemas con IPv6
+        dns.setDefaultResultOrder('ipv4first');
+        
         // Intentar usar DATABASE_URL primero (connection string completa)
         const databaseUrl = configService.get<string>('DATABASE_URL')?.trim();
         if (databaseUrl) {
@@ -28,9 +32,26 @@ import { Payment } from './entities/payment.entity';
             const url = new URL(databaseUrl);
             const database = url.pathname.slice(1) || 'postgres'; // Remover el "/" inicial
             
+            // Resolver hostname a IPv4 para evitar problemas con IPv6
+            let host = url.hostname;
+            try {
+              const addresses = await new Promise<string[]>((resolve, reject) => {
+                dns.resolve4(url.hostname, (err, addresses) => {
+                  if (err) reject(err);
+                  else resolve(addresses);
+                });
+              });
+              if (addresses && addresses.length > 0) {
+                host = addresses[0];
+                console.log(`   Resuelto a IPv4: ${host}`);
+              }
+            } catch (dnsError) {
+              console.warn(`   No se pudo resolver a IPv4, usando hostname: ${host}`);
+            }
+            
             const config = {
               type: 'postgres' as const,
-              host: url.hostname,
+              host: host,
               port: parseInt(url.port) || 5432,
               username: url.username || 'postgres',
               password: url.password,
@@ -41,10 +62,10 @@ import { Payment } from './entities/payment.entity';
                 rejectUnauthorized: false,
               },
               extra: {
-                connectionTimeoutMillis: 10000, // 10 segundos
+                connectionTimeoutMillis: 15000, // 15 segundos
                 max: 10, // máximo de conexiones en el pool
               },
-              retryAttempts: 3,
+              retryAttempts: 5,
               retryDelay: 3000,
             };
             
@@ -73,9 +94,26 @@ import { Payment } from './entities/payment.entity';
         const projectRef = supabaseHost.replace('.supabase.co', '');
         const dbHost = `db.${projectRef}.supabase.co`;
         
+        // Resolver hostname a IPv4
+        let resolvedHost = dbHost;
+        try {
+          const addresses = await new Promise<string[]>((resolve, reject) => {
+            dns.resolve4(dbHost, (err, addresses) => {
+              if (err) reject(err);
+              else resolve(addresses);
+            });
+          });
+          if (addresses && addresses.length > 0) {
+            resolvedHost = addresses[0];
+            console.log(`   Resuelto a IPv4: ${resolvedHost}`);
+          }
+        } catch (dnsError) {
+          console.warn(`   No se pudo resolver a IPv4, usando hostname: ${resolvedHost}`);
+        }
+        
         const config = {
           type: 'postgres' as const,
-          host: dbHost,
+          host: resolvedHost,
           port: 5432,
           username: 'postgres',
           password: serviceRoleKey,
@@ -86,10 +124,10 @@ import { Payment } from './entities/payment.entity';
             rejectUnauthorized: false,
           },
           extra: {
-            connectionTimeoutMillis: 10000, // 10 segundos
+            connectionTimeoutMillis: 15000, // 15 segundos
             max: 10, // máximo de conexiones en el pool
           },
-          retryAttempts: 3,
+          retryAttempts: 5,
           retryDelay: 3000,
         };
         
