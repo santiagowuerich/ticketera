@@ -4,6 +4,9 @@ if (!globalThis.crypto) {
     (globalThis as any).crypto = webcrypto;
 }
 
+// Deshabilitar IPv6 para forzar uso de IPv4 (necesario para Supabase)
+process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --dns-result-order=ipv4first';
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';

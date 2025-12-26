@@ -35,18 +35,36 @@ import * as dns from 'dns';
             // Resolver hostname a IPv4 para evitar problemas con IPv6
             let host = url.hostname;
             try {
-              const addresses = await new Promise<string[]>((resolve, reject) => {
-                dns.resolve4(url.hostname, (err, addresses) => {
+              const address = await new Promise<string>((resolve, reject) => {
+                dns.lookup(url.hostname, { family: 4, all: false }, (err, address) => {
                   if (err) reject(err);
-                  else resolve(addresses);
+                  else resolve(address);
                 });
               });
-              if (addresses && addresses.length > 0) {
-                host = addresses[0];
+              if (address) {
+                host = address;
                 console.log(`   Resuelto a IPv4: ${host}`);
               }
-            } catch (dnsError) {
-              console.warn(`   No se pudo resolver a IPv4, usando hostname: ${host}`);
+            } catch (dnsError: any) {
+              if (dnsError.code === 'ENOTFOUND' || dnsError.code === 'ENODATA') {
+                // Si no hay IPv4, resolver el pooler a IPv4
+                console.warn(`   No hay IPv4 disponible para ${url.hostname}`);
+                console.warn(`   Resolviendo pooler de Supabase a IPv4...`);
+                try {
+                  const poolerAddress = await new Promise<string>((resolve, reject) => {
+                    dns.lookup('aws-0-us-east-1.pooler.supabase.com', { family: 4, all: false }, (err, address) => {
+                      if (err) reject(err);
+                      else resolve(address);
+                    });
+                  });
+                  host = poolerAddress;
+                  console.log(`   ✅ Usando pooler IPv4: ${host}`);
+                } catch (poolerError) {
+                  console.warn(`   Error resolviendo pooler, usando hostname original: ${host}`);
+                }
+              } else {
+                console.warn(`   Error resolviendo DNS, usando hostname: ${host}`);
+              }
             }
             
             const config = {
@@ -65,6 +83,8 @@ import * as dns from 'dns';
                 connectionTimeoutMillis: 15000, // 15 segundos
                 max: 10, // máximo de conexiones en el pool
               },
+              // Configuración adicional para el driver de pg
+              options: `-c statement_timeout=30000`,
               retryAttempts: 5,
               retryDelay: 3000,
             };
@@ -97,18 +117,36 @@ import * as dns from 'dns';
         // Resolver hostname a IPv4
         let resolvedHost = dbHost;
         try {
-          const addresses = await new Promise<string[]>((resolve, reject) => {
-            dns.resolve4(dbHost, (err, addresses) => {
+          const address = await new Promise<string>((resolve, reject) => {
+            dns.lookup(dbHost, { family: 4, all: false }, (err, address) => {
               if (err) reject(err);
-              else resolve(addresses);
+              else resolve(address);
             });
           });
-          if (addresses && addresses.length > 0) {
-            resolvedHost = addresses[0];
+          if (address) {
+            resolvedHost = address;
             console.log(`   Resuelto a IPv4: ${resolvedHost}`);
           }
-        } catch (dnsError) {
-          console.warn(`   No se pudo resolver a IPv4, usando hostname: ${resolvedHost}`);
+        } catch (dnsError: any) {
+          if (dnsError.code === 'ENOTFOUND' || dnsError.code === 'ENODATA') {
+            // Si no hay IPv4, resolver el pooler a IPv4
+            console.warn(`   No hay IPv4 disponible para ${dbHost}`);
+            console.warn(`   Resolviendo pooler de Supabase a IPv4...`);
+            try {
+              const poolerAddress = await new Promise<string>((resolve, reject) => {
+                dns.lookup('aws-0-us-east-1.pooler.supabase.com', { family: 4, all: false }, (err, address) => {
+                  if (err) reject(err);
+                  else resolve(address);
+                });
+              });
+              resolvedHost = poolerAddress;
+              console.log(`   ✅ Usando pooler IPv4: ${resolvedHost}`);
+            } catch (poolerError) {
+              console.warn(`   Error resolviendo pooler, usando hostname original: ${resolvedHost}`);
+            }
+          } else {
+            console.warn(`   Error resolviendo DNS, usando hostname: ${resolvedHost}`);
+          }
         }
         
         const config = {
@@ -127,6 +165,8 @@ import * as dns from 'dns';
             connectionTimeoutMillis: 15000, // 15 segundos
             max: 10, // máximo de conexiones en el pool
           },
+          // Configuración adicional para el driver de pg
+          options: `-c statement_timeout=30000`,
           retryAttempts: 5,
           retryDelay: 3000,
         };
