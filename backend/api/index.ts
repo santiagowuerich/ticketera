@@ -9,7 +9,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { ExpressAdapter } from '@nestjs/platform-express';
 import { AppModule } from '../src/app.module';
 import express from 'express';
-import type { Request, Response } from 'express';
 
 const server = express();
 
@@ -54,15 +53,8 @@ async function bootstrap() {
     return cachedApp;
 }
 
-export default async function handler(
-    req: Request & { method?: string },
-    res: Response & {
-        setHeader(name: string, value: string | number | string[]): Response;
-        status(code: number): Response;
-        end(): void;
-        json(body: any): Response;
-    }
-) {
+// Tipos compatibles con Vercel - usando any para evitar conflictos de tipos
+export default async function handler(req: any, res: any) {
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
         const frontendUrl = process.env.FRONTEND_URL || 'https://ticketera-two.vercel.app';
