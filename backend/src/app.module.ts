@@ -21,106 +21,58 @@ import { Payment } from './entities/payment.entity';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
-        // Opción 1: Usar DATABASE_URL si está disponible (formato completo de conexión)
+        // Intentar usar DATABASE_URL primero (connection string completa)
         const databaseUrl = configService.get<string>('DATABASE_URL');
-        
-        if (databaseUrl && databaseUrl.startsWith('postgresql://')) {
+        if (databaseUrl) {
+          // Si DATABASE_URL está disponible, TypeORM puede parsearla automáticamente
+          // pero necesitamos extraer los componentes
           try {
             const url = new URL(databaseUrl);
-            const port = parseInt(url.port) || 5432;
             return {
               type: 'postgres',
               host: url.hostname,
-              port: port,
+              port: parseInt(url.port) || 5432,
               username: url.username || 'postgres',
-              password: url.password || configService.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
+              password: url.password,
               database: url.pathname.slice(1) || 'postgres',
               entities: [User, Event, Ticket, Payment],
               synchronize: false,
               ssl: {
                 rejectUnauthorized: false,
               },
-              extra: {
-                connectionTimeoutMillis: 30000,
-              },
             };
           } catch (error) {
-            console.warn('Error parsing DATABASE_URL, using SUPABASE_URL fallback');
+            console.warn('Error parsing DATABASE_URL, using individual config');
           }
         }
-        
-        // Opción 2: Usar SUPABASE_DB_HOST si está disponible
-        const dbHost = configService.get<string>('SUPABASE_DB_HOST');
-        if (dbHost) {
-          const usePooler = configService.get<string>('USE_CONNECTION_POOLER') !== 'false';
-          const dbPort = usePooler ? 6543 : 5432;
-          return {
-            type: 'postgres',
-            host: dbHost,
-            port: dbPort,
-            username: 'postgres',
-            password: configService.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
-            database: 'postgres',
-            entities: [User, Event, Ticket, Payment],
-            synchronize: false,
-            ssl: {
-              rejectUnauthorized: false,
-            },
-            extra: {
-              connectionTimeoutMillis: 30000,
-            },
-          };
-        }
-        
-        // Opción 3: Construir desde SUPABASE_URL
+
+        // Si no hay DATABASE_URL, construir desde SUPABASE_URL
         const supabaseUrl = configService.get<string>('SUPABASE_URL');
-        if (!supabaseUrl) {
-          throw new Error('DATABASE_URL, SUPABASE_DB_HOST, or SUPABASE_URL must be defined');
-        }
+        const serviceRoleKey = configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
         
-        try {
-          const url = new URL(supabaseUrl);
-          // Para Supabase, el host de la DB es: db.[project-ref].supabase.co
-          // La URL de la API es: https://[project-ref].supabase.co
-          const hostname = url.hostname;
-          let dbHostname: string;
-          
-          if (hostname.includes('supabase.co')) {
-            // Extraer el project-ref (primera parte del hostname)
-            const projectRef = hostname.split('.')[0];
-            dbHostname = `db.${projectRef}.supabase.co`;
-          } else {
-            // Si no es Supabase, usar el hostname directamente
-            dbHostname = hostname;
-          }
-          
-          // Usar el pooler de conexiones de Supabase (puerto 6543) que es más estable
-          // El pooler maneja mejor las conexiones y evita problemas con IPv6
-          const usePooler = configService.get<string>('USE_CONNECTION_POOLER') !== 'false';
-          const dbPort = usePooler ? 6543 : 5432;
-          
-          return {
-            type: 'postgres',
-            host: dbHostname,
-            port: dbPort,
-            username: 'postgres',
-            password: configService.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
-            database: 'postgres',
-            entities: [User, Event, Ticket, Payment],
-            synchronize: false,
-            ssl: {
-              rejectUnauthorized: false,
-            },
-            // Configuración adicional para mejorar la conexión
-            extra: {
-              // Forzar IPv4 para evitar problemas con IPv6
-              // Esto se pasa al driver de pg
-              connectionTimeoutMillis: 30000,
-            },
-          };
-        } catch (error) {
-          throw new Error(`Invalid SUPABASE_URL format: ${supabaseUrl}. Error: ${error}`);
+        if (!supabaseUrl || !serviceRoleKey) {
+          throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be defined, or use DATABASE_URL');
         }
+
+        // Extraer el project ref de la URL de Supabase
+        // Ejemplo: https://xxxxx.supabase.co -> db.xxxxx.supabase.co
+        const supabaseHost = new URL(supabaseUrl).hostname;
+        const projectRef = supabaseHost.replace('.supabase.co', '');
+        const dbHost = `db.${projectRef}.supabase.co`;
+        
+        return {
+          type: 'postgres',
+          host: dbHost,
+          port: 5432,
+          username: 'postgres',
+          password: serviceRoleKey,
+          database: 'postgres',
+          entities: [User, Event, Ticket, Payment],
+          synchronize: false,
+          ssl: {
+            rejectUnauthorized: false,
+          },
+        };
       },
       inject: [ConfigService],
     }),
