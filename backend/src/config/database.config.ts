@@ -41,17 +41,3 @@ export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOp
     ssl: nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
   };
 };
-
-// Option 3: Individual connection params (local development fallback)
-return {
-  type: 'postgres',
-  host: configService.get('DATABASE_HOST') || 'localhost',
-  port: parseInt(configService.get('DATABASE_PORT') || '5432'),
-  username: configService.get('DATABASE_USERNAME') || 'postgres',
-  password: configService.get('DATABASE_PASSWORD') || 'postgres',
-  database: configService.get('DATABASE_NAME') || 'ticketera',
-  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-  synchronize: configService.get('NODE_ENV') !== 'production',
-  logging: configService.get('NODE_ENV') === 'development',
-};
-};
