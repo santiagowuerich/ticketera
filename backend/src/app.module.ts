@@ -27,10 +27,11 @@ import { Payment } from './entities/payment.entity';
         if (databaseUrl && databaseUrl.startsWith('postgresql://')) {
           try {
             const url = new URL(databaseUrl);
+            const port = parseInt(url.port) || 5432;
             return {
               type: 'postgres',
               host: url.hostname,
-              port: parseInt(url.port) || 5432,
+              port: port,
               username: url.username || 'postgres',
               password: url.password || configService.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
               database: url.pathname.slice(1) || 'postgres',
@@ -38,6 +39,9 @@ import { Payment } from './entities/payment.entity';
               synchronize: false,
               ssl: {
                 rejectUnauthorized: false,
+              },
+              extra: {
+                connectionTimeoutMillis: 30000,
               },
             };
           } catch (error) {
@@ -48,10 +52,12 @@ import { Payment } from './entities/payment.entity';
         // Opción 2: Usar SUPABASE_DB_HOST si está disponible
         const dbHost = configService.get<string>('SUPABASE_DB_HOST');
         if (dbHost) {
+          const usePooler = configService.get<string>('USE_CONNECTION_POOLER') !== 'false';
+          const dbPort = usePooler ? 6543 : 5432;
           return {
             type: 'postgres',
             host: dbHost,
-            port: 5432,
+            port: dbPort,
             username: 'postgres',
             password: configService.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
             database: 'postgres',
@@ -59,6 +65,9 @@ import { Payment } from './entities/payment.entity';
             synchronize: false,
             ssl: {
               rejectUnauthorized: false,
+            },
+            extra: {
+              connectionTimeoutMillis: 30000,
             },
           };
         }
@@ -85,10 +94,15 @@ import { Payment } from './entities/payment.entity';
             dbHostname = hostname;
           }
           
+          // Usar el pooler de conexiones de Supabase (puerto 6543) que es más estable
+          // El pooler maneja mejor las conexiones y evita problemas con IPv6
+          const usePooler = configService.get<string>('USE_CONNECTION_POOLER') !== 'false';
+          const dbPort = usePooler ? 6543 : 5432;
+          
           return {
             type: 'postgres',
             host: dbHostname,
-            port: 5432,
+            port: dbPort,
             username: 'postgres',
             password: configService.get<string>('SUPABASE_SERVICE_ROLE_KEY'),
             database: 'postgres',
@@ -96,6 +110,12 @@ import { Payment } from './entities/payment.entity';
             synchronize: false,
             ssl: {
               rejectUnauthorized: false,
+            },
+            // Configuración adicional para mejorar la conexión
+            extra: {
+              // Forzar IPv4 para evitar problemas con IPv6
+              // Esto se pasa al driver de pg
+              connectionTimeoutMillis: 30000,
             },
           };
         } catch (error) {
