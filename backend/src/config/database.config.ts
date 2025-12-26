@@ -2,62 +2,56 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigService } from '@nestjs/config';
 
 export const getDatabaseConfig = (configService: ConfigService): TypeOrmModuleOptions => {
-  const supabaseUrl = configService.get('SUPABASE_URL');
-
-  // Parse Supabase URL to extract connection details
-  // Supabase connection string format: postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
-  const databaseUrl = configService.get('DATABASE_URL');
+  const databaseUrl = configService.get<string>('DATABASE_URL');
+  const nodeEnv = configService.get<string>('NODE_ENV', 'development');
 
   if (databaseUrl) {
-    // Use DATABASE_URL if provided (Supabase connection string)
+    console.log('🔌 Conectando a la base de datos mediante DATABASE_URL...');
     return {
       type: 'postgres',
       url: databaseUrl,
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      synchronize: configService.get('NODE_ENV') !== 'production', // Disable in production
-      logging: false,
-      ssl: {
-        rejectUnauthorized: false, // Required for Supabase
-      },
-    };
-  }
-
-  // Option 2: Construct from SUPABASE_URL + DATABASE_PASSWORD
-  const dbPassword = configService.get('DATABASE_PASSWORD');
-
-  if (supabaseUrl && dbPassword) {
-    // Extract project ref from: https://kkbvemjgdpkcstrgorxc.supabase.co
-    const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '');
-    const host = `db.${projectRef}.supabase.co`;
-
-    console.log(`🔌 Intentando conectar a Supabase: ${host} (Puerto 6543)`);
-
-    return {
-      type: 'postgres',
-      host: host,
-      port: 6543, // Usar el puerto del pooler (más confiable)
-      username: 'postgres',
-      password: dbPassword,
-      database: 'postgres',
-      entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-      synchronize: configService.get('NODE_ENV') !== 'production',
-      logging: false,
-      ssl: {
+      synchronize: false, // Nunca sincronizar en producción por seguridad
+      logging: nodeEnv === 'development',
+      ssl: databaseUrl.includes('localhost') ? false : {
         rejectUnauthorized: false,
       },
     };
   }
 
-  // Option 3: Individual connection params (local development fallback)
+  // Fallback para desarrollo local o configuración manual
+  const host = configService.get<string>('DATABASE_HOST', 'localhost');
+  const port = parseInt(configService.get<string>('DATABASE_PORT', '5432'), 10);
+  const username = configService.get<string>('DATABASE_USERNAME', 'postgres');
+  const password = configService.get<string>('DATABASE_PASSWORD', 'postgres');
+  const database = configService.get<string>('DATABASE_NAME', 'ticketera');
+
+  console.log(`🔌 Conectando a la base de datos: ${host}:${port}/${database}`);
+
   return {
     type: 'postgres',
-    host: configService.get('DATABASE_HOST') || 'localhost',
-    port: parseInt(configService.get('DATABASE_PORT') || '5432'),
-    username: configService.get('DATABASE_USERNAME') || 'postgres',
-    password: configService.get('DATABASE_PASSWORD') || 'postgres',
-    database: configService.get('DATABASE_NAME') || 'ticketera',
+    host,
+    port,
+    username,
+    password,
+    database,
     entities: [__dirname + '/../**/*.entity{.ts,.js}'],
-    synchronize: configService.get('NODE_ENV') !== 'production',
-    logging: configService.get('NODE_ENV') === 'development',
+    synchronize: nodeEnv !== 'production',
+    logging: nodeEnv === 'development',
+    ssl: nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
   };
+};
+
+// Option 3: Individual connection params (local development fallback)
+return {
+  type: 'postgres',
+  host: configService.get('DATABASE_HOST') || 'localhost',
+  port: parseInt(configService.get('DATABASE_PORT') || '5432'),
+  username: configService.get('DATABASE_USERNAME') || 'postgres',
+  password: configService.get('DATABASE_PASSWORD') || 'postgres',
+  database: configService.get('DATABASE_NAME') || 'ticketera',
+  entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+  synchronize: configService.get('NODE_ENV') !== 'production',
+  logging: configService.get('NODE_ENV') === 'development',
+};
 };
