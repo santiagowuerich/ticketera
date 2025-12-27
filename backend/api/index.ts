@@ -1,3 +1,7 @@
+// IMPORTANTE: Forzar DNS a IPv4 ANTES de cualquier otro import
+import * as dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
+
 // Polyfill for Node.js 18 crypto global
 import { webcrypto } from 'node:crypto';
 if (!globalThis.crypto) {
@@ -21,7 +25,9 @@ async function bootstrap() {
                 AppModule,
                 new ExpressAdapter(server),
                 {
-                    logger: process.env.NODE_ENV === 'production' ? ['error', 'warn'] : ['log', 'error', 'warn', 'debug'],
+                    logger: process.env.NODE_ENV === 'production'
+                        ? ['error', 'warn']
+                        : ['log', 'error', 'warn', 'debug'],
                 }
             );
 
@@ -45,23 +51,27 @@ async function bootstrap() {
 
             await app.init();
             cachedApp = app;
+            console.log('✅ NestJS app initialized successfully');
         } catch (error) {
-            console.error('Error initializing NestJS app:', error);
+            console.error('❌ Error initializing NestJS app:', error);
             throw error;
         }
     }
     return cachedApp;
 }
 
-// Tipos compatibles con Vercel - usando any para evitar conflictos de tipos
+// Handler para Vercel Serverless
 export default async function handler(req: any, res: any) {
+    const frontendUrl = process.env.FRONTEND_URL || 'https://ticketera-two.vercel.app';
+
+    // Agregar headers CORS a TODAS las respuestas
+    res.setHeader('Access-Control-Allow-Origin', frontendUrl);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
     // Handle preflight requests
     if (req.method === 'OPTIONS') {
-        const frontendUrl = process.env.FRONTEND_URL || 'https://ticketera-two.vercel.app';
-        res.setHeader('Access-Control-Allow-Origin', frontendUrl);
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
         res.status(200).end();
         return;
     }
@@ -70,10 +80,12 @@ export default async function handler(req: any, res: any) {
         await bootstrap();
         server(req, res);
     } catch (error) {
-        console.error('Error handling request:', error);
+        console.error('❌ Error handling request:', error);
         res.status(500).json({
             error: 'Internal Server Error',
-            message: process.env.NODE_ENV === 'development' ? (error as Error).message : 'An error occurred',
+            message: process.env.NODE_ENV === 'development'
+                ? (error as Error).message
+                : 'An error occurred',
         });
     }
 }
