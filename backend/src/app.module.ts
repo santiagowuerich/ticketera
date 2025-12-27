@@ -42,7 +42,7 @@ import { Payment } from './entities/payment.entity';
         if (isProduction) {
           // Pooler de Supabase - probamos múltiples regiones comunes
           // El usuario debe verificar su región en Supabase Dashboard -> Settings -> Database -> Connection string
-          const poolerHost = 'aws-0-us-east-1.pooler.supabase.com';
+          const poolerHost = 'aws-1-sa-east-1.pooler.supabase.com';
           const poolerUsername = `postgres.${projectRef}`;
 
           console.log(`🚀 PRODUCCIÓN: Conectando via Supabase Pooler`);

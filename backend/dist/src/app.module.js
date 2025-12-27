@@ -44,7 +44,7 @@ exports.AppModule = AppModule = __decorate([
                         .replace('.supabase.co', '');
                     const isProduction = nodeEnv === 'production';
                     if (isProduction) {
-                        const poolerHost = 'aws-0-us-east-1.pooler.supabase.com';
+                        const poolerHost = 'aws-1-sa-east-1.pooler.supabase.com';
                         const poolerUsername = `postgres.${projectRef}`;
                         console.log(`🚀 PRODUCCIÓN: Conectando via Supabase Pooler`);
                         console.log(`   Host: ${poolerHost}:6543`);
