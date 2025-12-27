@@ -42,10 +42,33 @@ exports.AppModule = AppModule = __decorate([
                     const projectRef = supabaseUrl
                         .replace('https://', '')
                         .replace('.supabase.co', '');
+                    const isProduction = nodeEnv === 'production';
+                    if (isProduction) {
+                        const poolerHost = 'aws-0-us-east-1.pooler.supabase.com';
+                        const poolerUsername = `postgres.${projectRef}`;
+                        console.log(`🚀 PRODUCCIÓN: Conectando via Supabase Pooler`);
+                        console.log(`   Host: ${poolerHost}:6543`);
+                        console.log(`   Usuario: ${poolerUsername}`);
+                        console.log(`   Proyecto: ${projectRef}`);
+                        return {
+                            type: 'postgres',
+                            host: poolerHost,
+                            port: 6543,
+                            username: poolerUsername,
+                            password: dbPassword,
+                            database: 'postgres',
+                            entities: [user_entity_1.User, event_entity_1.Event, ticket_entity_1.Ticket, payment_entity_1.Payment],
+                            synchronize: false,
+                            logging: false,
+                            ssl: {
+                                rejectUnauthorized: false,
+                            },
+                        };
+                    }
                     const host = `db.${projectRef}.supabase.co`;
-                    console.log(`🔌 Conectando a Supabase: ${host}:5432`);
+                    console.log(`🔌 DESARROLLO: Conectando directamente a Supabase`);
+                    console.log(`   Host: ${host}:5432`);
                     console.log(`   Proyecto: ${projectRef}`);
-                    console.log(`   Entorno: ${nodeEnv}`);
                     return {
                         type: 'postgres',
                         host: host,
@@ -54,8 +77,8 @@ exports.AppModule = AppModule = __decorate([
                         password: dbPassword,
                         database: 'postgres',
                         entities: [user_entity_1.User, event_entity_1.Event, ticket_entity_1.Ticket, payment_entity_1.Payment],
-                        synchronize: nodeEnv !== 'production',
-                        logging: nodeEnv === 'development',
+                        synchronize: true,
+                        logging: true,
                         ssl: {
                             rejectUnauthorized: false,
                         },
