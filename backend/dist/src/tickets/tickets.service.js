@@ -18,7 +18,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const ticket_entity_1 = require("../entities/ticket.entity");
 const event_entity_1 = require("../entities/event.entity");
-const uuid_1 = require("uuid");
+const crypto_1 = require("crypto");
 let TicketsService = class TicketsService {
     constructor(ticketsRepository, eventsRepository) {
         this.ticketsRepository = ticketsRepository;
@@ -31,18 +31,18 @@ let TicketsService = class TicketsService {
         if (!event) {
             throw new common_1.NotFoundException('Evento no encontrado');
         }
-        if (event.availableSpots < createTicketDto.quantity) {
+        if (event.availableTickets < createTicketDto.quantity) {
             throw new common_1.BadRequestException('No hay suficientes lugares disponibles');
         }
         const totalPrice = event.price * createTicketDto.quantity;
-        const qrCode = (0, uuid_1.v4)();
+        const qrCode = (0, crypto_1.randomUUID)();
         const ticket = this.ticketsRepository.create({
             ...createTicketDto,
             totalPrice,
             qrCode,
             status: ticket_entity_1.TicketStatus.PENDING,
         });
-        event.availableSpots -= createTicketDto.quantity;
+        event.availableTickets -= createTicketDto.quantity;
         await this.eventsRepository.save(event);
         return this.ticketsRepository.save(ticket);
     }

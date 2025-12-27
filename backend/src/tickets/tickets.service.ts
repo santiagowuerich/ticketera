@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Ticket, TicketStatus } from '../entities/ticket.entity';
 import { Event } from '../entities/event.entity';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 export interface CreateTicketDto {
     eventId: string;
@@ -42,12 +42,12 @@ export class TicketsService {
             throw new NotFoundException('Evento no encontrado');
         }
 
-        if (event.availableSpots < createTicketDto.quantity) {
+        if (event.availableTickets < createTicketDto.quantity) {
             throw new BadRequestException('No hay suficientes lugares disponibles');
         }
 
         const totalPrice = event.price * createTicketDto.quantity;
-        const qrCode = uuidv4();
+        const qrCode = randomUUID();
 
         const ticket = this.ticketsRepository.create({
             ...createTicketDto,
@@ -57,7 +57,7 @@ export class TicketsService {
         });
 
         // Actualizar lugares disponibles
-        event.availableSpots -= createTicketDto.quantity;
+        event.availableTickets -= createTicketDto.quantity;
         await this.eventsRepository.save(event);
 
         return this.ticketsRepository.save(ticket);
