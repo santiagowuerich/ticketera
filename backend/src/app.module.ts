@@ -11,7 +11,6 @@ import { User } from './entities/user.entity';
 import { Event } from './entities/event.entity';
 import { Ticket } from './entities/ticket.entity';
 import { Payment } from './entities/payment.entity';
-import * as dns from 'dns';
 
 @Module({
   imports: [
@@ -21,67 +20,38 @@ import * as dns from 'dns';
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
+      useFactory: (configService: ConfigService) => {
         const supabaseUrl = configService.get<string>('SUPABASE_URL');
-        const serviceRoleKey = configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
-        
-        if (!supabaseUrl || !serviceRoleKey) {
-          throw new Error('SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY deben estar definidos');
+        const dbPassword = configService.get<string>('DATABASE_PASSWORD');
+        const nodeEnv = configService.get<string>('NODE_ENV', 'development');
+
+        if (!supabaseUrl || !dbPassword) {
+          throw new Error('SUPABASE_URL y DATABASE_PASSWORD deben estar definidos en .env');
         }
 
-        // Extraer el project ref de la URL de Supabase
-        // Ejemplo: https://xxxxx.supabase.co -> db.xxxxx.supabase.co
-        const supabaseHost = new URL(supabaseUrl).hostname;
-        const projectRef = supabaseHost.replace('.supabase.co', '');
-        const dbHost = `db.${projectRef}.supabase.co`;
-        
-        // Resolver hostname a IPv4 para evitar problemas con IPv6
-        let resolvedHost = dbHost;
-        try {
-          // Forzar IPv4 primero
-          dns.setDefaultResultOrder('ipv4first');
-          const address = await new Promise<string>((resolve, reject) => {
-            dns.lookup(dbHost, { family: 4, all: false }, (err, address) => {
-              if (err) reject(err);
-              else resolve(address);
-            });
-          });
-          if (address) {
-            resolvedHost = address;
-            console.log(`✅ Resuelto ${dbHost} a IPv4: ${resolvedHost}`);
-          }
-        } catch (dnsError: any) {
-          // Si no hay IPv4, usar el pooler de Supabase que sí tiene IPv4
-          if (dnsError.code === 'ENOTFOUND' || dnsError.code === 'ENODATA') {
-            console.warn(`⚠️  No hay IPv4 para ${dbHost}, usando pooler de Supabase`);
-            const poolerHost = `${projectRef}.pooler.supabase.com`;
-            try {
-              const poolerAddress = await new Promise<string>((resolve, reject) => {
-                dns.lookup(poolerHost, { family: 4, all: false }, (err, address) => {
-                  if (err) reject(err);
-                  else resolve(address);
-                });
-              });
-              resolvedHost = poolerAddress;
-              console.log(`✅ Usando pooler IPv4: ${resolvedHost}`);
-            } catch (poolerError) {
-              console.warn(`⚠️  Error con pooler, usando hostname original: ${dbHost}`);
-              resolvedHost = dbHost;
-            }
-          } else {
-            console.warn(`⚠️  Error DNS, usando hostname original: ${dbHost}`);
-          }
-        }
-        
+        // Extraer project ref de SUPABASE_URL
+        // Ejemplo: https://kkbvemjgdpkcstrgorxc.supabase.co -> kkbvemjgdpkcstrgorxc
+        const projectRef = supabaseUrl
+          .replace('https://', '')
+          .replace('.supabase.co', '');
+
+        // Host de la base de datos (conexión directa)
+        const host = `db.${projectRef}.supabase.co`;
+
+        console.log(`🔌 Conectando a Supabase: ${host}:5432`);
+        console.log(`   Proyecto: ${projectRef}`);
+        console.log(`   Entorno: ${nodeEnv}`);
+
         return {
-          type: 'postgres',
-          host: resolvedHost,
+          type: 'postgres' as const,
+          host: host,
           port: 5432,
           username: 'postgres',
-          password: serviceRoleKey,
+          password: dbPassword,
           database: 'postgres',
           entities: [User, Event, Ticket, Payment],
-          synchronize: false,
+          synchronize: nodeEnv !== 'production',
+          logging: nodeEnv === 'development',
           ssl: {
             rejectUnauthorized: false,
           },
@@ -97,4 +67,4 @@ import * as dns from 'dns';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }

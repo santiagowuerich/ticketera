@@ -1,11 +1,13 @@
+// IMPORTANTE: Estos polyfills DEBEN estar antes que cualquier import
+// Forzar DNS a IPv4 (Supabase no soporta IPv6 directamente)
+import * as dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
+
 // Polyfill for Node.js 18 crypto global
 import { webcrypto } from 'node:crypto';
 if (!globalThis.crypto) {
-    (globalThis as any).crypto = webcrypto;
+  (globalThis as any).crypto = webcrypto;
 }
-
-// Deshabilitar IPv6 para forzar uso de IPv4 (necesario para Supabase)
-process.env.NODE_OPTIONS = (process.env.NODE_OPTIONS || '') + ' --dns-result-order=ipv4first';
 
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
@@ -13,7 +15,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  
+
   // Habilitar CORS para el frontend
   const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   app.enableCors({

@@ -1,121 +1,99 @@
-# 🏛️ Ticketera Backend - API NestJS
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
 
-Backend API para el sistema de ticketera del museo, desarrollado con NestJS y TypeScript.
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
 
-## 🛠️ Tecnologías
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-- **Framework**: NestJS con TypeScript
-- **Base de datos**: PostgreSQL con TypeORM
-- **Autenticación**: JWT + Passport
-- **Validación**: class-validator
-- **ORM**: TypeORM
-- **Configuración**: @nestjs/config
+## Description
 
-## 📁 Estructura del proyecto
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-```
-src/
-├── config/           # Configuraciones de base de datos y JWT
-├── modules/          # Módulos de la aplicación
-│   ├── auth/        # Autenticación y autorización
-│   ├── users/       # Gestión de usuarios
-│   ├── tickets/     # Gestión de tickets
-│   ├── events/      # Gestión de eventos/exposiciones
-│   └── payments/    # Integración con MercadoPago
-├── entities/         # Entidades de base de datos
-├── dto/             # Data Transfer Objects
-├── guards/          # Guards de autenticación
-├── decorators/      # Decoradores personalizados
-└── interfaces/      # Interfaces TypeScript
-```
-
-## 🚀 Instalación y configuración
-
-### 1. Instalar dependencias
-```bash
-npm install
-```
-
-### 2. Configurar variables de entorno
-```bash
-cp .env.example .env
-```
-
-Edita el archivo `.env` con tus configuraciones:
-- **Base de datos**: Configura las credenciales de Supabase
-- **JWT**: Configura la clave secreta
-- **MercadoPago**: Token de acceso (para más adelante)
-
-### 3. Ejecutar la aplicación
+## Project setup
 
 ```bash
-# Desarrollo con hot-reload
-npm run start:dev
-
-# Producción
-npm run start:prod
-
-# Build
-npm run build
+$ npm install
 ```
 
-La API estará disponible en: `http://localhost:3001`
-
-## 🧪 Tests
+## Compile and run the project
 
 ```bash
-# Tests unitarios
-npm run test
+# development
+$ npm run start
 
-# Tests e2e
-npm run test:e2e
+# watch mode
+$ npm run start:dev
 
-# Cobertura de tests
-npm run test:cov
+# production mode
+$ npm run start:prod
 ```
 
-## 📋 API Endpoints
+## Run tests
 
-### Autenticación
-- `POST /auth/login` - Iniciar sesión
-- `POST /auth/register` - Registrar usuario
-- `POST /auth/refresh` - Refrescar token
+```bash
+# unit tests
+$ npm run test
 
-### Usuarios
-- `GET /users/profile` - Obtener perfil de usuario
-- `PUT /users/profile` - Actualizar perfil
+# e2e tests
+$ npm run test:e2e
 
-### Tickets
-- `GET /tickets` - Listar tickets del usuario
-- `GET /tickets/:id` - Obtener ticket específico
-- `POST /tickets` - Comprar ticket
-- `DELETE /tickets/:id` - Cancelar ticket
+# test coverage
+$ npm run test:cov
+```
 
-### Eventos
-- `GET /events` - Listar eventos disponibles
-- `GET /events/:id` - Detalles de evento
+## Deployment
 
-### Pagos (Próximamente)
-- `POST /payments/create` - Crear preferencia de pago
-- `POST /payments/webhook` - Webhook de MercadoPago
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
 
-## 🔧 Configuración de Supabase
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
 
-1. Crea un proyecto en [Supabase](https://supabase.com)
-2. Ve a Settings > API para obtener URL y keys
-3. Configura las variables de entorno en `.env`
-4. Ejecuta las migraciones de base de datos
+```bash
+$ npm install -g mau
+$ mau deploy
+```
 
-## 🚀 Deployment
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
-Para producción, recomendamos:
-- **Railway**: Fácil deployment con PostgreSQL integrado
-- **Heroku**: Plataforma cloud tradicional
-- **Vercel**: Para serverless (requiere adaptación)
+## Resources
 
-## 📚 Documentación adicional
+Check out a few resources that may come in handy when working with NestJS:
 
-- [Documentación NestJS](https://docs.nestjs.com)
-- [TypeORM Documentation](https://typeorm.io)
-- [Supabase Docs](https://supabase.com/docs)
-- [MercadoPago API](https://www.mercadopago.com.ar/developers/es)
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+
+## Support
+
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+## Stay in touch
+
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).

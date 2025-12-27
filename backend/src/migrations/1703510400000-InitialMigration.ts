@@ -362,3 +362,4 @@ export class InitialMigration1703510400000 implements MigrationInterface {
     await queryRunner.dropTable('users');
   }
 }
+

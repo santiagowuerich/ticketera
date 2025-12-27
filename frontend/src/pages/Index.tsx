@@ -10,7 +10,7 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navigation />
-
+      
       <main role="main">
         <HeroSection />
         <HistorySection />
@@ -18,7 +18,7 @@ export default function Index() {
         <GallerySection />
         <InfoSection />
       </main>
-
+      
       <MuseumFooter />
     </div>
   );

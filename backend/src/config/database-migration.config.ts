@@ -5,49 +5,35 @@ config();
 
 // Función para obtener la configuración de la base de datos
 function getDatabaseConfig() {
-  // Intentar usar DATABASE_URL primero
-  const databaseUrl = process.env.DATABASE_URL;
-  if (databaseUrl) {
-    try {
-      const url = new URL(databaseUrl);
-      return {
-        type: 'postgres' as const,
-        host: url.hostname,
-        port: parseInt(url.port) || 5432,
-        username: url.username || 'postgres',
-        password: url.password,
-        database: url.pathname.slice(1) || 'postgres',
-        ssl: {
-          rejectUnauthorized: false,
-        },
-      };
-    } catch (error) {
-      console.warn('Error parsing DATABASE_URL, using individual config');
-    }
-  }
-
-  // Si no hay DATABASE_URL, construir desde SUPABASE_URL
   const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const dbPassword = process.env.DATABASE_PASSWORD;
 
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('DATABASE_URL or SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be defined');
+  if (!supabaseUrl || !dbPassword) {
+    throw new Error('SUPABASE_URL y DATABASE_PASSWORD deben estar definidos en .env');
   }
 
   // Extraer el project ref de la URL de Supabase
-  const supabaseHost = new URL(supabaseUrl).hostname;
-  const projectRef = supabaseHost.replace('.supabase.co', '');
-  const dbHost = `db.${projectRef}.supabase.co`;
+  const projectRef = supabaseUrl.replace('https://', '').replace('.supabase.co', '');
+  
+  // IMPORTANTE: Usar el Pooler de Supabase (soporta IPv4)
+  // La conexión directa (db.xxx.supabase.co) solo funciona con IPv6
+  const host = 'aws-0-sa-east-1.pooler.supabase.com';
+  const username = `postgres.${projectRef}`;
+
+  console.log(`🔌 Migraciones - Conectando a Supabase Pooler: ${host}:6543`);
 
   return {
     type: 'postgres' as const,
-    host: dbHost,
-    port: 5432,
-    username: 'postgres',
-    password: serviceRoleKey,
+    host: host,
+    port: 6543,
+    username: username,
+    password: dbPassword,
     database: 'postgres',
     ssl: {
       rejectUnauthorized: false,
+    },
+    extra: {
+      prepared_statements: false,
     },
   };
 }
